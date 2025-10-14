@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Image Compressor Tool</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+  </head>
+
+  
+  <body>
+    <div class="app-container">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <h2>📦 Compressor</h2>
+        <nav>
+          <ul>
+            <li class="active"> <i data-lucide="upload"></i> <span>Upload</span></li>
+            <li> <i data-lucide="clock"></i> <span>History</span></li>
+            <li> <i data-lucide="settings"></i><span>Settings</span></li>
+          </ul>
+        </nav>
+      </aside>
+
+     <main class="main-panel">
+  <header>
+    <h1>Image Compressor Tool</h1>
+    <button id="themeToggle">🌙 Dark Mode</button>
+  </header>
+  <br>
+
+  <!-- Upload Section -->
+  <section id="uploadSection">
+    <div class="upload-card card">
+      <h3>Upload Images</h3>
+      <input type="file" id="imageInput" multiple />
+      <div class="options">
+        <label for="quality">Quality:</label>
+        <select id="quality">
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+
+        <label for="aspect">Aspect Ratio:</label>
+        <select id="aspect">
+          <option value="original">Original</option>
+          <option value="4:3">4:3</option>
+          <option value="16:9">16:9</option>
+          <option value="1:1">1:1</option>
+        </select>
+      </div>
+      <button id="compressBtn">🚀 Compress</button>
+      <button id="resetBtn" class="secondary">🗑️ Reset</button>
+    </div>
+
+    <section id="progress" class="card hidden">
+      <h3>Processing</h3>
+      <progress id="progressBar" value="0" max="100"></progress>
+    </section>
+
+    <section id="results" class="card hidden"></section>
+    <section id="preview" class="card hidden">
+      <h3>Preview</h3>
+      <div class="preview-container">
+        <div>
+          <p>Original</p>
+          <img id="originalImg" src="" alt="Original Image" />
+        </div>
+        <div>
+          <p>Compressed</p>
+          <img id="compressedImg" src="" alt="Compressed Image" />
+        </div>
+      </div>
+    </section>
+  </section>
+
+  <!-- History Section -->
+  <section id="historySection" class="hidden">
+    <div class="card">
+      <h3>📜 Compression History</h3>
+      <div class="history-actions">
+        <button id="downloadCSV">⬇ Export CSV</button>
+        <button id="downloadPDF">⬇ Export PDF</button>
+      </div>
+      <table id="historyTable"></table>
+      <div class="chart-container">
+        <canvas id="historyChart"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Settings Section -->
+  <section id="settingsSection" class="hidden">
+    <div class="card">
+      <h3>⚙️ Settings</h3>
+      <label>
+        Default Quality:
+        <select id="defaultQuality">
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </label>
+
+      <br><br>
+
+      <label>
+        Default Aspect Ratio:
+        <select id="defaultAspect">
+          <option value="original">Original</option>
+          <option value="4:3">4:3</option>
+          <option value="16:9">16:9</option>
+          <option value="1:1">1:1</option>
+        </select>
+      </label>
+
+    </div>
+  </section>
+</main>
+
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <script src="index.js"></script>
+  </body>
+</html>
