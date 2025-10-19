@@ -67,17 +67,34 @@ Image-Compressor-Tool/
 
 ### 1. Clone Repository  
 ```bash
-git clone https://github.com/virajwathsalag/image-compressor-tool.git
-cd image-compressor-tool
+git clone https://github.com/sachithasamadhib/Image-Compressor-Tool.git
+cd Image-Compressor-Tool
 ```
 
-### 2. Backend (Flask API)  
+### 2. Environment Configuration
+**🔒 Important: Set up environment variables for secure credential management**
+
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate   # On Windows: venv\Scripts\activate
+# Copy environment template
+cp .env.example .env
+
+# Edit .env with your MongoDB credentials and configuration
+# See ENV_SETUP.md for detailed configuration guide
+```
+
+### 3. Install Dependencies
+```bash
 pip install -r requirements.txt
-python app.py
+```
+
+### 4. Validate Configuration (Optional)
+```bash
+python validate_env.py
+```
+
+### 5. Run Backend (Flask API)  
+```bash
+python Controller/AccessPoint.py
 ```
 Flask server will start at: `http://localhost:5000`
 
@@ -111,20 +128,29 @@ Frontend will start at: `http://localhost:3000`
 
 ---
 
-## 👥 Contributors
+## � Security & Configuration
+
+- All database credentials are stored in `.env` file
+- `.env` is included in `.gitignore` for security
+- Use `.env.example` as a template for your configuration
+- See `ENV_SETUP.md` for detailed configuration guide
+
+### Quick Security Setup:
+```bash
+cp .env.example .env
+# Edit .env with your credentials
+python validate_env.py  # Validate configuration
+```
+
+---
+
+## �👥 Contributors
 We are grateful to the following contributors for their valuable efforts in making this possible:
 
 - [Viraj Wathsala Gunasinghe](https://github.com/virajwathsalag)
 - [Sachitha Samadhi Bandara](https://github.com/sachithasamadhib)
 - [Ravin Jayasanka](https://github.com/MrRaveen)
 - [Sanuja Rasanajna](https://github.com/SanujaRasanajna2007)
-
----
-
-## 📅 Submission & Evaluation  
-
-- GitHub repo link submission: **30 September 2025, 23:59 PM**  
-- Viva presentation: Demonstration of tool, algorithms, and results.  
 
 ---
 
