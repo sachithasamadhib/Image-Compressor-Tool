@@ -34,24 +34,47 @@
   <section id="uploadSection">
     <div class="upload-card card">
       <h3>Upload Images</h3>
-      <input type="file" id="imageInput" multiple />
-      <div class="options">
-        <label for="quality">Quality:</label>
-        <select id="quality">
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-        </select>
+      <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
+        Select images to automatically compress and save to Inputs/Outputs folders
+      </p>
+      <input type="file" id="imageInput" multiple accept="image/*" />
+                    <div class="options">
+                        <label for="quality">Quality Level:</label>
+                        <select id="quality">
+                            <option value="high">High - Little compression, high quality</option>
+                            <option value="medium">Medium - Balanced compression and quality</option>
+                            <option value="low">Low - Extreme compression, low quality</option>
+                        </select>
 
-        <label for="aspect">Aspect Ratio:</label>
-        <select id="aspect">
-          <option value="original">Original</option>
-          <option value="4:3">4:3</option>
-          <option value="16:9">16:9</option>
-          <option value="1:1">1:1</option>
-        </select>
-      </div>
-      <button id="compressBtn">🚀 Compress</button>
+                        <label for="aspect">Image Size Filter:</label>
+                        <select id="aspect">
+                            <option value="original">Original</option>
+                            <option value="4:3">4:3 (1024×768)</option>
+                            <option value="16:9">16:9 (1920×1080)</option>
+                            <option value="1:1">1:1 (1024×1024)</option>
+                        </select>
+
+                        <label for="maxSize">Maximum File Size (MB):</label>
+                        <input type="range" id="maxSize" min="0.1" max="10" step="0.1" value="5">
+                        <span id="maxSizeValue">5 MB</span>
+
+                        <label for="compressionMethod">Compression Method:</label>
+                        <select id="compressionMethod">
+                            <option value="jpeg">JPEG Quality (Lossy)</option>
+                            <option value="huffman">Huffman Coding (Lossless)</option>
+                        </select>
+                        <div id="compressionInfo" class="compression-info">
+                            <p id="compressionDescription">Select a compression method to see details</p>
+                        </div>
+
+                        <label for="outputFolder">Output Folder:</label>
+                        <div class="folder-selection">
+                            <input type="text" id="outputFolder" placeholder="Choose output folder..." readonly />
+                            <button type="button" id="selectFolderBtn">📁 Browse</button>
+                        </div>
+                        <small style="color: #666; font-size: 12px;">Leave empty to use default Outputs folder</small>
+                    </div>
+      <button id="compressBtn" disabled>🚀 Compress Images</button>
       <button id="resetBtn" class="secondary">🗑️ Reset</button>
     </div>
 
@@ -63,14 +86,20 @@
     <section id="results" class="card hidden"></section>
     <section id="preview" class="card hidden">
       <h3>Preview</h3>
-      <div class="preview-container">
-        <div>
-          <p>Original</p>
-          <img id="originalImg" src="" alt="Original Image" />
+      <div class="preview-tabs">
+        <button id="previewTab" class="preview-tab active">Selected Images</button>
+        <button id="compressedTab" class="preview-tab">Compressed Results</button>
+      </div>
+      
+      <div id="selectedImagesPreview" class="preview-container">
+        <div class="image-grid" id="imageGrid">
+          <!-- Selected images will be displayed here -->
         </div>
-        <div>
-          <p>Compressed</p>
-          <img id="compressedImg" src="" alt="Compressed Image" />
+      </div>
+      
+      <div id="compressedImagesPreview" class="preview-container hidden">
+        <div class="compressed-grid" id="compressedGrid">
+          <!-- Compressed images will be displayed here -->
         </div>
       </div>
     </section>
@@ -126,5 +155,22 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <script src="index.js"></script>
+    
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal hidden">
+      <div class="modal-content">
+        <span class="modal-close">&times;</span>
+        <div class="modal-header">
+          <h3 id="modalTitle">Image Preview</h3>
+        </div>
+        <div class="modal-body">
+          <img id="modalImage" src="" alt="Full size image">
+        </div>
+        <div class="modal-footer">
+          <button id="downloadImageBtn" class="download-btn">⬇️ Download Image</button>
+          <button id="closeModalBtn" class="close-btn">Close</button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
