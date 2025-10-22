@@ -18,26 +18,9 @@ const historySection = document.getElementById('historySection');
 const settingsSection = document.getElementById('settingsSection');
 const compressionMethodSelect = document.getElementById('compressionMethod');
 const compressionDescription = document.getElementById('compressionDescription');
-const outputFolderInput = document.getElementById('outputFolder');
-const selectFolderBtn = document.getElementById('selectFolderBtn');
-const maxSizeSlider = document.getElementById('maxSize');
-const maxSizeValue = document.getElementById('maxSizeValue');
-const previewTab = document.getElementById('previewTab');
-const compressedTab = document.getElementById('compressedTab');
-const selectedImagesPreview = document.getElementById('selectedImagesPreview');
-const compressedImagesPreview = document.getElementById('compressedImagesPreview');
-const imageGrid = document.getElementById('imageGrid');
-const compressedGrid = document.getElementById('compressedGrid');
-const imageModal = document.getElementById('imageModal');
-const modalImage = document.getElementById('modalImage');
-const modalTitle = document.getElementById('modalTitle');
-const modalClose = document.querySelector('.modal-close');
-const closeModalBtn = document.getElementById('closeModalBtn');
-const downloadImageBtn = document.getElementById('downloadImageBtn');
 
 let history = [];
 let historyChart = null;
-let currentImageData = null; // Store current image data for download
 
 // API Base URL
 const API_BASE_URL = 'http://127.0.0.1:5000';
@@ -70,15 +53,11 @@ async function testConnection() {
 }
 
 // Compression functions
-async function compressImage(formData, quality, maxSize, aspectRatio, compressionMethod = 'jpeg', outputFolder = '') {
+async function compressImage(formData, quality, maxSize, aspectRatio, compressionMethod = 'jpeg') {
   try {
-    const url = `${API_BASE_URL}/upload-images/${quality}/${maxSize}/${aspectRatio}/${compressionMethod}`;
-    const response = await fetch(url, {
+    const response = await fetch(`${API_BASE_URL}/upload-images/${quality}/${maxSize}/${aspectRatio}/${compressionMethod}`, {
       method: 'POST',
-      body: formData,
-      headers: {
-        'X-Output-Folder': outputFolder || ''
-      }
+      body: formData
     });
     
     if (!response.ok) {
@@ -92,14 +71,11 @@ async function compressImage(formData, quality, maxSize, aspectRatio, compressio
   }
 }
 
-async function compressImageHuffman(formData, outputFolder = '') {
+async function compressImageHuffman(formData) {
   try {
     const response = await fetch(`${API_BASE_URL}/compress-huffman`, {
       method: 'POST',
-      body: formData,
-      headers: {
-        'X-Output-Folder': outputFolder || ''
-      }
+      body: formData
     });
     
     if (!response.ok) {
@@ -116,11 +92,6 @@ async function compressImageHuffman(formData, outputFolder = '') {
 // Get compression methods
 async function getCompressionMethods() {
   return await apiCall('/compression-methods');
-}
-
-// Get available dimensions
-async function getAvailableDimensions() {
-  return await apiCall('/available-dimensions');
 }
 
 // Get history
@@ -173,71 +144,7 @@ compressionMethodSelect.addEventListener('change', (e) => {
   updateCompressionDescription(method);
 });
 
-// Size slider handler
-maxSizeSlider.addEventListener('input', (e) => {
-  const value = parseFloat(e.target.value);
-  maxSizeValue.textContent = `${value} MB`;
-});
-
-// Preview tab handlers
-previewTab.addEventListener('click', () => {
-  previewTab.classList.add('active');
-  compressedTab.classList.remove('active');
-  selectedImagesPreview.classList.remove('hidden');
-  compressedImagesPreview.classList.add('hidden');
-});
-
-compressedTab.addEventListener('click', () => {
-  compressedTab.classList.add('active');
-  previewTab.classList.remove('active');
-  compressedImagesPreview.classList.remove('hidden');
-  selectedImagesPreview.classList.add('hidden');
-});
-
-// Folder selection handler
-selectFolderBtn.addEventListener('click', async () => {
-  try {
-    console.log('Folder selection clicked');
-    
-    // For Electron, we can use the dialog API
-    if (window.electronAPI && window.electronAPI.showOpenDialog) {
-      console.log('Using Electron dialog API');
-      const result = await window.electronAPI.showOpenDialog({
-        properties: ['openDirectory'],
-        title: 'Select Output Folder for Compressed Images'
-      });
-      console.log('Dialog result:', result);
-      
-      if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
-        outputFolderInput.value = result.filePaths[0];
-        console.log('Selected folder:', result.filePaths[0]);
-      } else {
-        console.log('Dialog canceled or no folder selected');
-      }
-    } else {
-      console.log('Electron API not available, using fallback');
-      // Fallback for web version - use HTML5 file input
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.webkitdirectory = true;
-      input.onchange = (e) => {
-        const files = e.target.files;
-        if (files.length > 0) {
-          // Get the directory path from the first file
-          const path = files[0].webkitRelativePath.split('/')[0];
-          outputFolderInput.value = path;
-          console.log('Selected folder (web fallback):', path);
-        }
-      };
-      input.click();
-    }
-  } catch (error) {
-    console.error('Error selecting folder:', error);
-    alert('Error selecting folder. Please enter the path manually.');
-  }
-});
-
-// Handle file selection (don't auto-process)
+// Auto-process files when selected
 imageInput.addEventListener('change', async (e) => {
   console.log('Files selected:', e.target.files.length);
   
@@ -245,254 +152,14 @@ imageInput.addEventListener('change', async (e) => {
     return;
   }
   
-  // Show preview of selected files
-  showFilePreview();
-  
-  // Enable compress button
-  compressBtn.disabled = false;
-  compressBtn.textContent = '🚀 Compress Images';
+  // Automatically process the selected files
+  await processSelectedFiles();
 });
-
-function showFilePreview() {
-  if (!imageInput.files.length) return;
-  
-  // Clear previous images
-  imageGrid.innerHTML = '';
-  
-  // Display all selected images
-  Array.from(imageInput.files).forEach((file, index) => {
-    if (file.type.startsWith('image/')) {
-      const imageItem = document.createElement('div');
-      imageItem.className = 'image-item';
-      
-      const img = document.createElement('img');
-      img.src = URL.createObjectURL(file);
-      img.alt = file.name;
-      
-      const imageInfo = document.createElement('div');
-      imageInfo.className = 'image-info';
-      
-      const imageName = document.createElement('div');
-      imageName.className = 'image-name';
-      imageName.textContent = file.name;
-      
-      const imageSize = document.createElement('div');
-      imageSize.className = 'image-size';
-      imageSize.textContent = formatFileSize(file.size);
-      
-      imageInfo.appendChild(imageName);
-      imageInfo.appendChild(imageSize);
-      
-      imageItem.appendChild(img);
-      imageItem.appendChild(imageInfo);
-      imageGrid.appendChild(imageItem);
-    }
-  });
-  
-  // Show preview section and switch to selected images tab
-  previewDiv.classList.remove("hidden");
-  animateSection("preview");
-  
-  // Switch to selected images tab
-  previewTab.classList.add('active');
-  compressedTab.classList.remove('active');
-  selectedImagesPreview.classList.remove('hidden');
-  compressedImagesPreview.classList.add('hidden');
-  
-  // Clear compressed image preview
-  compressedGrid.innerHTML = "";
-}
-
-function showCompressedResults(result) {
-  if (!result.processed_files || result.processed_files.length === 0) return;
-  
-  // Clear previous compressed images
-  compressedGrid.innerHTML = '';
-  
-  // Display all compressed images
-  result.processed_files.forEach((file, index) => {
-    if (file.error) {
-      // Show error for this file
-      const errorItem = document.createElement('div');
-      errorItem.className = 'compressed-item';
-      errorItem.innerHTML = `
-        <div class="compression-info">
-          <div class="filename">${file.filename}</div>
-          <div style="color: #e74c3c; margin-top: 10px;">Error: ${file.error}</div>
-        </div>
-      `;
-      compressedGrid.appendChild(errorItem);
-    } else if (file.compressed_data) {
-      // Find the original file
-      const originalFile = Array.from(imageInput.files).find(f => f.name === file.filename);
-      
-      const compressedItem = document.createElement('div');
-      compressedItem.className = 'compressed-item';
-      
-      // Create comparison images
-      const comparisonImages = document.createElement('div');
-      comparisonImages.className = 'comparison-images';
-      
-      // Original image
-      const originalPair = document.createElement('div');
-      originalPair.className = 'image-pair';
-      
-      const originalImg = document.createElement('img');
-      if (originalFile) {
-        originalImg.src = URL.createObjectURL(originalFile);
-      }
-      originalImg.alt = 'Original';
-      originalImg.style.cursor = 'pointer';
-      originalImg.title = 'Click to view full size';
-      
-      // Add click handler for original image
-      originalImg.addEventListener('click', () => {
-        if (originalFile) {
-          openImageModal(
-            URL.createObjectURL(originalFile),
-            `Original: ${file.filename}`,
-            null
-          );
-        }
-      });
-      
-      const originalLabel = document.createElement('p');
-      originalLabel.textContent = 'Original (Click to view)';
-      
-      originalPair.appendChild(originalImg);
-      originalPair.appendChild(originalLabel);
-      
-      // Compressed image
-      const compressedPair = document.createElement('div');
-      compressedPair.className = 'image-pair';
-      
-      const compressedImg = document.createElement('img');
-      compressedImg.src = "data:image/jpeg;base64," + file.compressed_data;
-      compressedImg.alt = 'Compressed';
-      compressedImg.style.cursor = 'pointer';
-      compressedImg.title = 'Click to view full size';
-      
-      // Add click handler for compressed image
-      compressedImg.addEventListener('click', () => {
-        openImageModal(
-          "data:image/jpeg;base64," + file.compressed_data,
-          `Compressed: ${file.filename}`,
-          file.compressed_data
-        );
-      });
-      
-      const compressedLabel = document.createElement('p');
-      compressedLabel.textContent = 'Compressed (Click to view)';
-      
-      compressedPair.appendChild(compressedImg);
-      compressedPair.appendChild(compressedLabel);
-      
-      comparisonImages.appendChild(originalPair);
-      comparisonImages.appendChild(compressedPair);
-      
-      // Create compression info
-      const compressionInfo = document.createElement('div');
-      compressionInfo.className = 'compression-info';
-      
-      const filename = document.createElement('div');
-      filename.className = 'filename';
-      filename.textContent = file.filename;
-      
-      const stats = document.createElement('div');
-      stats.className = 'stats';
-      
-      const originalSize = document.createElement('div');
-      originalSize.className = 'original-size';
-      originalSize.textContent = formatFileSize(file.original_size);
-      
-      const compressedSize = document.createElement('div');
-      compressedSize.className = 'compressed-size';
-      compressedSize.textContent = formatFileSize(file.compressed_size);
-      
-      const compressionRatio = document.createElement('div');
-      compressionRatio.className = 'compression-ratio';
-      compressionRatio.textContent = `${file.compression_ratio}%`;
-      
-      stats.appendChild(originalSize);
-      stats.appendChild(compressedSize);
-      stats.appendChild(compressionRatio);
-      
-      compressionInfo.appendChild(filename);
-      compressionInfo.appendChild(stats);
-      
-      compressedItem.appendChild(comparisonImages);
-      compressedItem.appendChild(compressionInfo);
-      compressedGrid.appendChild(compressedItem);
-    }
-  });
-  
-  // Switch to compressed results tab
-  compressedTab.classList.add('active');
-  previewTab.classList.remove('active');
-  compressedImagesPreview.classList.remove('hidden');
-  selectedImagesPreview.classList.add('hidden');
-  
-  previewDiv.classList.remove("hidden");
-  animateSection("preview");
-}
-
-// Modal functionality
-function openImageModal(imageSrc, title, imageData = null) {
-  modalImage.src = imageSrc;
-  modalTitle.textContent = title;
-  currentImageData = imageData;
-  imageModal.classList.remove('hidden');
-  document.body.style.overflow = 'hidden'; // Prevent background scrolling
-}
-
-function closeImageModal() {
-  imageModal.classList.add('hidden');
-  document.body.style.overflow = 'auto'; // Restore scrolling
-  modalImage.src = '';
-  modalTitle.textContent = '';
-  currentImageData = null;
-}
-
-function downloadCurrentImage() {
-  if (!currentImageData) {
-    // Fallback: try to download from modal image src
-    const link = document.createElement('a');
-    link.href = modalImage.src;
-    link.download = modalTitle.textContent || 'compressed_image.jpg';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    return;
-  }
-  
-  // Convert base64 to blob and download
-  try {
-    const byteCharacters = atob(currentImageData);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: 'image/jpeg' });
-    
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = modalTitle.textContent || 'compressed_image.jpg';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('Error downloading image:', error);
-    alert('Error downloading image. Please try again.');
-  }
-}
 
 function updateCompressionDescription(method) {
   const descriptions = {
     'jpeg': 'JPEG Quality Compression: Reduces file size by lowering image quality. Creates viewable images with smaller file sizes. Good for photos and web images.',
-    'huffman': 'Huffman-Optimized Compression: Uses Huffman-inspired algorithms to find the optimal compression settings. Creates viewable JPEG images with maximum compression while maintaining quality. Best for achieving the smallest file sizes.'
+    'huffman': 'Huffman Coding: Lossless compression using frequency analysis. Creates binary files that are not directly viewable but achieve maximum compression. Best for archival purposes.'
   };
   
   compressionDescription.textContent = descriptions[method] || 'Select a compression method to see details';
@@ -539,11 +206,9 @@ async function processSelectedFiles() {
   const quality = document.getElementById('quality').value;
   const aspectRatio = document.getElementById('aspect').value;
   const compressionMethod = document.getElementById('compressionMethod').value;
-  const outputFolder = document.getElementById('outputFolder').value;
-  const maxSizeMB = parseFloat(maxSizeSlider.value);
-  const maxSize = maxSizeMB * 1024 * 1024; // Convert MB to bytes
+  const maxSize = 5000000; // 5MB default max size
 
-  console.log('Compression settings:', { quality, aspectRatio, compressionMethod, maxSize, outputFolder });
+  console.log('Compression settings:', { quality, aspectRatio, compressionMethod, maxSize });
 
   const formData = new FormData();
   for (let file of imageInput.files) {
@@ -561,10 +226,10 @@ async function processSelectedFiles() {
   console.log('Calling compression API...');
   if (compressionMethod === 'huffman') {
     console.log('Using Huffman compression');
-    result = await compressImageHuffman(formData, outputFolder);
+    result = await compressImageHuffman(formData);
   } else {
     console.log('Using JPEG compression');
-    result = await compressImage(formData, quality, maxSize, aspectRatio, compressionMethod, outputFolder);
+    result = await compressImage(formData, quality, maxSize, aspectRatio, compressionMethod);
   }
 
   console.log('Compression result:', result);
@@ -592,15 +257,15 @@ async function handleCompressionResult(result, compressionMethod) {
         totalOriginal += file.original_size;
         totalCompressed += file.compressed_size;
         
-        // Display for both Huffman and JPEG compression (both now produce viewable images)
+        // Different display for Huffman vs JPEG compression
         if (compressionMethod === 'huffman') {
           resultsHtml += `
             <div style="margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
               <strong>${file.filename}</strong><br>
-              Original: ${formatFileSize(file.original_size)} (${file.original_dimensions[0]}×${file.original_dimensions[1]})<br>
-              Compressed: ${formatFileSize(file.compressed_size)} (${file.final_dimensions[0]}×${file.final_dimensions[1]})<br>
+              Original: ${formatFileSize(file.original_size)} (${file.original_bits} bits)<br>
+              Compressed: ${formatFileSize(file.compressed_size)} (${file.compressed_bits} bits)<br>
               Compression: ${file.compression_ratio}%<br>
-              Method: ${file.compression_method || compressionMethod} | <em>Huffman-optimized JPEG</em><br>
+              Method: ${file.compression_method || compressionMethod} | <em>Binary file (not viewable)</em><br>
               <small>Saved to: ${file.output_path || 'Outputs folder'}</small>
             </div>
           `;
@@ -630,9 +295,18 @@ async function handleCompressionResult(result, compressionMethod) {
     resultsDiv.classList.remove("hidden");
     animateSection("results");
 
-    // Show preview for all compressed images
-    if (result.processed_files.length > 0) {
-      showCompressedResults(result);
+    // Show preview only for JPEG compression (Huffman creates binary files)
+    if (compressionMethod !== 'huffman' && result.processed_files.length > 0 && result.processed_files[0].compressed_data) {
+      const originalFile = imageInput.files[0];
+      originalImg.src = URL.createObjectURL(originalFile);
+      compressedImg.src = "data:image/jpeg;base64," + result.processed_files[0].compressed_data;
+      previewDiv.classList.remove("hidden");
+      animateSection("preview");
+    } else if (compressionMethod === 'huffman') {
+      // Hide preview for Huffman compression
+      previewDiv.classList.add("hidden");
+      resultsHtml += `<p style="color: #666; font-style: italic; margin-top: 10px;">Note: Huffman compression creates binary files that are not directly viewable as images.</p>`;
+      resultsDiv.innerHTML = resultsHtml;
     }
 
     // Refresh history from backend
@@ -642,18 +316,7 @@ async function handleCompressionResult(result, compressionMethod) {
 
 compressBtn.addEventListener("click", async () => {
   console.log('Compress button clicked!');
-  
-  // Disable button during processing
-  compressBtn.disabled = true;
-  compressBtn.textContent = '⏳ Compressing...';
-  
-  try {
-    await processSelectedFiles();
-  } finally {
-    // Re-enable button after processing
-    compressBtn.disabled = false;
-    compressBtn.textContent = '🚀 Compress Images';
-  }
+  await processSelectedFiles();
 });
 
 const resetBtn = document.getElementById("resetBtn");
@@ -666,24 +329,14 @@ resetBtn.addEventListener("click", () => {
 
   // Clear contents
   resultsDiv.innerHTML = "";
-  imageGrid.innerHTML = "";
-  compressedGrid.innerHTML = "";
+  originalImg.src = "";
+  compressedImg.src = "";
 
   // Reset file input
   imageInput.value = "";
 
   // Reset progress bar
   progressBar.value = 0;
-  
-  // Disable compress button
-  compressBtn.disabled = true;
-  compressBtn.textContent = '🚀 Compress Images';
-  
-  // Reset preview tabs
-  previewTab.classList.add('active');
-  compressedTab.classList.remove('active');
-  selectedImagesPreview.classList.remove('hidden');
-  compressedImagesPreview.classList.add('hidden');
 });
 
 async function loadHistoryFromBackend() {
@@ -973,9 +626,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Load compression methods and update UI
   await loadCompressionMethods();
   
-  // Load available dimensions and update UI
-  await loadAvailableDimensions();
-  
   // Load history from backend when page loads
   loadHistoryFromBackend();
   
@@ -985,25 +635,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.body.classList.add("dark");
     themeToggle.textContent = "☀️ Light Mode";
   }
-  
-  // Modal event listeners
-  modalClose.addEventListener('click', closeImageModal);
-  closeModalBtn.addEventListener('click', closeImageModal);
-  downloadImageBtn.addEventListener('click', downloadCurrentImage);
-  
-  // Close modal when clicking outside
-  imageModal.addEventListener('click', (e) => {
-    if (e.target === imageModal) {
-      closeImageModal();
-    }
-  });
-  
-  // Close modal with Escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !imageModal.classList.contains('hidden')) {
-      closeImageModal();
-    }
-  });
 });
 
 async function testBackendConnection() {
@@ -1099,29 +730,4 @@ function showFallbackCompressionMethods() {
     <option value="huffman">Huffman Coding (Lossless) - May not be available</option>
   `;
   updateCompressionDescription(compressionMethodSelect.value);
-}
-
-async function loadAvailableDimensions() {
-  try {
-    const response = await getAvailableDimensions();
-    if (response.error) {
-      console.error('Error loading dimensions:', response.error);
-      return;
-    }
-    
-    const aspectSelect = document.getElementById('aspect');
-    aspectSelect.innerHTML = ''; // Clear existing options
-    
-    // Add options based on backend response
-    for (const [key, description] of Object.entries(response.dimension_descriptions)) {
-      const option = document.createElement('option');
-      option.value = key;
-      option.textContent = description;
-      aspectSelect.appendChild(option);
-    }
-    
-    console.log('Loaded dimensions:', response);
-  } catch (error) {
-    console.error('Error loading dimensions:', error);
-  }
 }
